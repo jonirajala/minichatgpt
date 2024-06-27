@@ -28,6 +28,27 @@ def get_lr(step):
     else:
         return min_lr
 
+def save_losses(train_losses, val_losses, config):
+    f_name = f"losses/{config.iters}_{datetime.now().strftime('%d-%m')}.json"
+    
+    if os.path.exists(f_name):
+        with open(f_name, "r") as f:
+            losses = json.load(f)
+    else:
+        losses = {"train_losses": [], "val_losses": []}
+    
+    losses["train_losses"].extend(train_losses)
+    losses["val_losses"].extend(val_losses)
+    
+    with open(f_name, "w") as f:
+        json.dump(losses, f)
+    print(f"Losses saved to {f_name}")
+
+def save_model(model, model_name, step):
+    model_save_path = os.path.join("trained_models", f"{model_name}_{step}step.pt")
+    torch.save(model.state_dict(), model_save_path)
+    print(f"Model saved to {model_save_path}")
+
 class DataLoader:
     def __init__(self, data, batch_size, block_size):
         self.data = data
@@ -66,15 +87,13 @@ if __name__ == "__main__":
 
     enc = tiktoken.get_encoding("gpt2")
 
+    device = "cpu"
     if torch.cuda.is_available():
         device = "cuda"
     elif torch.backends.mps.is_available():
         device =  "mps"
-    else:
-        device = "cpu"
 
-    
-    print(f"Training onf {device}")
+    print(f"Training on {device} device")
 
     train_data = np.array(
         np.memmap(
@@ -86,11 +105,9 @@ if __name__ == "__main__":
     )
 
     model_name = "CAL" # crazyassllm
-
     config = Config(enc.n_vocab)
-
     model = LLama(config).to(device)
-
+    
     if device == 'cuda':
         model = torch.compile(model)
 
@@ -139,19 +156,19 @@ if __name__ == "__main__":
             val_losses.append(val_loss.item())
             model.train()
 
-    model_save_path = os.path.join(
-        "trained_models", f"{model_name}_{config.iters}iters.pt"
-    )
-    torch.save(model.state_dict(), model_save_path)
-    print(f"Model saved to {model_save_path}")
+        if step % 500 == 0:
+            save_model(model, model_name, step)
+            save_losses(train_losses, val_losses, config)
+            train_losses = []
+            val_losses = []
+            print(f"Model and losses saved to on step {step}")
+    
+    save_model(model, model_name, step)
+    save_losses(train_losses, val_losses, config)
 
     model.eval()
     inp = torch.tensor(enc.encode("And that is  ")).to(device)
     gen_text = model.generate(inp).detach().cpu().numpy()
     gen_text = enc.decode(gen_text)
     print(gen_text)
-
-    f_name = f"losses/{config.iters}_{datetime.now().strftime('%d-%m')}.json"
-    with open(f_name, "w") as f:
-        json.dump({"train_losses": train_losses, "val_losses": val_losses}, f)
  
