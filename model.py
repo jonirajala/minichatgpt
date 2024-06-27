@@ -1,30 +1,3 @@
-"""
-https://arxiv.org/pdf/2302.13971
-
-'We train large transformers on a large quantity of textual data using a standard optimizer.'
-'We tokenize the data with the bytepair encoding (BPE)'
-
-
-Differences compared to basic transformer
-
-Pre-normalization [GPT3]
-- To improve the training stability, we normalize the input of each transformer sub-layer, instead of normalizing the output. We use the RMSNorm normalizing function, 
-
-SwiGLU activation function [PaLM].
-- We replace the ReLU non-linearity by the SwiGLU activation function
-
-Rotary Embeddings [GPTNeo].
-- We remove the absolute positional embeddings, and instead, add rotary positional embeddings (RoPE), introduced by Su et al. (2021), at each layer of the network.
-
-
-AdamW optimizer
-- β1 = 0.9, β2 = 0.95.
-
-We use a cosine learning rate schedule, such that the final learning rate is equal to 10% of the maximal learning rate. We use a weight decay of 0.1 and gradient clipping of 1.0
-
-no dropout https://github.com/openlm-research/open_llama/issues/22
-
-"""
 
 from torch import nn
 import torch
@@ -165,11 +138,4 @@ class LLama(nn.Module):
             inp = torch.cat((inp, inp_next), dim=1)
 
         return inp[0]
-
-    def get_param_conf(params):
-        param_configurations = {
-            50: [{"emb_dim": 384, "n_layers": 8, "n_head": 8}],
-            75: [{"emb_dim": 512, "n_layers": 8, "n_head": 8}],
-            100: [{"emb_dim": 576, "n_layers": 10, "n_head": 8}],
-        }
-        return param_configurations.get(params)
+    
