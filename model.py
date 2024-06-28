@@ -29,12 +29,17 @@ class MultiHeadSelfAttention(nn.Module):
         self.emb_dim = config.emb_dim
         self.n_head = config.n_head
         self.head_dim = config.emb_dim // config.n_head
+        self.batch_size = config.batch_size
+        self.block_size = config.block_size
 
         self.Wq = nn.Linear(config.emb_dim, self.n_head * self.head_dim, bias=False)
         self.Wk = nn.Linear(config.emb_dim, self.n_head * self.head_dim, bias=False)
         self.Wv = nn.Linear(config.emb_dim, self.n_head * self.head_dim, bias=False)
         self.Wo = nn.Linear(config.emb_dim, self.n_head * self.head_dim, bias=False)
         self.pos_emb = RotaryPositionalEmbeddings(self.head_dim, config.block_size)
+
+        self.cache_k = None
+        self.cache_v = None
 
 
         # flash attention make GPU go brrrrr but support is only in PyTorch >= 2.0
@@ -46,9 +51,12 @@ class MultiHeadSelfAttention(nn.Module):
                                         .view(1, 1, config.block_size, config.block_size))
         
 
-    def forward(self, x):
+    def forward(self, x, start_pos):
         batch_size, seq_len, dim = x.shape
         assert dim == self.emb_dim, "dim must be equal to self.emb_dim"
+        if start_pos == 0 or self.cache_k is None or self.cache_v is None:
+            self.cache_k = torch.zeros((batch_size, self.block_size, self.n_head, self.head_dim), device=x.device)
+            self.cache_v = torch.zeros((batch_size, self.block_size, self.n_head, self.head_dim), device=x.device)
 
         xq = self.Wq(x)
         xk = self.Wk(x)
@@ -61,9 +69,16 @@ class MultiHeadSelfAttention(nn.Module):
         xq = self.pos_emb(xq)
         xk = self.pos_emb(xk)
 
+        self.cache_k[:batch_size, start_pos:start_pos + seq_len] = xk
+        self.cache_v[:batch_size, start_pos:start_pos + seq_len] = xv
+
+        
+        keys = self.cache_k[:batch_size, :start_pos + seq_len]
+        values = self.cache_v[:batch_size, :start_pos + seq_len]
+        
         queries = xq.transpose(1, 2)
-        keys = xk.transpose(1, 2)
-        values = xv.transpose(1, 2)
+        keys = keys.transpose(1, 2)
+        values = values.transpose(1, 2)
 
         
          # causal self-attention; Self-attend: (B, nh, T, hs) x (B, nh, hs, T) -> (B, nh, T, T)
@@ -91,8 +106,8 @@ class Block(nn.Module):
         self.attn = MultiHeadSelfAttention(config)
         self.mlp = MLP(config)
 
-    def forward(self, x):
-        x = x + self.attn(self.rn1(x))
+    def forward(self, x, start_pos):
+        x = x + self.attn(self.rn1(x), start_pos)
         x = x + self.mlp(self.rn2(x))
         return x
 
@@ -108,11 +123,11 @@ class LLama(nn.Module):
         self.rmsnorm = RMSNorm(config.emb_dim)
         # self.inp_emb.weight = self.fc_out.weight # https://paperswithcode.com/method/weight-tying
 
-    def forward(self, x, y=None):
+    def forward(self, x, start_pos, y=None):
         batch, seq_len = x.shape
         x = self.inp_emb(x)
         for block in self.blocks:
-            x = block(x)
+            x = block(x, start_pos)
         x = self.rmsnorm(x)
 
         logits = self.fc_out(x)
@@ -127,8 +142,8 @@ class LLama(nn.Module):
     @torch.no_grad()
     def generate(self, inp, temperature=1.0, top_k=None):
         inp = inp.reshape(1, -1)
-        for _ in range(self.config.block_size - inp.shape[1]):
-            logits, _ = self.forward(inp)
+        for pos in range(self.config.block_size - inp.shape[1]):
+            logits, _ = self.forward(inp, pos)
             logits = logits[:, -1, :] / temperature
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))

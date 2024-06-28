@@ -173,12 +173,6 @@ urls = [
 
 corpus = ""
 
-# dataset = load_dataset("opus_books", "en-fi")["train"]
-# for example in dataset:
-#     print(example["translation"]["fi"])
-#     corpus += example["translation"]["fi"]
-
-
 # Iterate over each URL
 random.shuffle(urls)
 for url in urls:

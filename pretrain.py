@@ -14,8 +14,8 @@ from datetime import datetime
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-warmup_steps = 10
-max_step = 50
+warmup_steps = 200
+max_step = 1000
 max_lr = 6e-4
 min_lr = 0.1 * max_lr
 def get_lr(step):
@@ -52,6 +52,7 @@ def save_model(model, model_name, step):
 class DataLoader:
     def __init__(self, data, batch_size, block_size):
         self.data = data
+        print(f"Loaded {len(data)} tokens")
 
         self.batch_size = batch_size
         self.block_size = block_size
@@ -96,12 +97,10 @@ if __name__ == "__main__":
     print(f"Training on {device} device")
 
     train_data = np.array(
-        np.memmap(
-            os.path.join("data", "finnish_train.bin"), dtype=np.uint16, mode="r"
-        )
+        np.memmap("finnish_train.bin", dtype=np.uint16, mode="r")
     )
     val_data = np.array(
-        np.memmap(os.path.join("data", "finnish_val.bin"), dtype=np.uint16, mode="r")
+        np.memmap("finnish_val.bin", dtype=np.uint16, mode="r")
     )
 
     model_name = "CAL" # crazyassllm
@@ -135,10 +134,10 @@ if __name__ == "__main__":
         model.zero_grad()
         if device == 'cuda':
             # currently google colabs t4 gpu doesnt support compile + bfloat16
-            with torch.autocast(device_type=device, dtype=torch.bfloat16, enabled=False):
-                out, loss = model(x, y)
+            with torch.autocast(device_type=device, dtype=torch.float16, enabled=True):
+                out, loss = model(x, 0, y)
         else:
-            out, loss = model(x, y)
+            out, loss = model(x, 0, y)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         lr = get_lr(step)
@@ -152,11 +151,11 @@ if __name__ == "__main__":
             model.eval()
             val_x, val_y = valloader.get_batch()
             with torch.no_grad():
-                val_out, val_loss = model(val_x, val_y)
+                val_out, val_loss = model(val_x, 0, val_y)
             val_losses.append(val_loss.item())
             model.train()
 
-        if step % 500 == 0:
+        if (step+1) % 500 == 0:
             save_model(model, model_name, step)
             save_losses(train_losses, val_losses, config)
             train_losses = []

@@ -195,9 +195,8 @@ if __name__ == "__main__":
 
     # Save cleaned corpus
     input_file_path = os.path.join(os.path.dirname(__file__), 'cleaned_finnish.txt')
-    if not os.path.exists(input_file_path):
-        with open(input_file_path, 'w', encoding='utf-8') as f:
-            f.write(cleaned_corpus)
+    with open(input_file_path, 'w', encoding='utf-8') as f:
+        f.write(cleaned_corpus)
 
     # Split the data into training and validation sets
     n = len(cleaned_corpus)
