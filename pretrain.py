@@ -45,7 +45,7 @@ def save_losses(train_losses, val_losses, config):
     print(f"Losses saved to {f_name}")
 
 def save_model(model, model_name, step):
-    model_save_path = os.path.join("trained_models", f"{model_name}_{step}step.pt")
+    model_save_path = os.path.join("trained_models", f"{model_name}.pt")
     torch.save(model.state_dict(), model_save_path)
     print(f"Model saved to {model_save_path}")
 
@@ -97,10 +97,10 @@ if __name__ == "__main__":
     print(f"Training on {device} device")
 
     train_data = np.array(
-        np.memmap("finnish_train.bin", dtype=np.uint16, mode="r")
+        np.memmap(os.path.join("data","finnish_train.bin"), dtype=np.uint16, mode="r")
     )
     val_data = np.array(
-        np.memmap("finnish_val.bin", dtype=np.uint16, mode="r")
+        np.memmap(os.path.join("data","finnish_val.bin"), dtype=np.uint16, mode="r")
     )
 
     model_name = "CAL" # crazyassllm
@@ -156,13 +156,16 @@ if __name__ == "__main__":
             model.train()
 
         if (step+1) % 500 == 0:
-            save_model(model, model_name, step)
+            saving_model_name = model_name + f"_{config.batch_size*config.block_size*step // 1_000_000}M_TOKENS"
+            save_model(model, saving_model_name, step)
             save_losses(train_losses, val_losses, config)
             train_losses = []
             val_losses = []
             print(f"Model and losses saved to on step {step}")
     
-    save_model(model, model_name, step)
+
+    saving_model_name = model_name + f"_{config.batch_size*config.block_size*step // 1_000_000}M TOKENS"
+    save_model(model, saving_model_name, step)
     save_losses(train_losses, val_losses, config)
 
     model.eval()
