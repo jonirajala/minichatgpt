@@ -140,10 +140,12 @@ class LLama(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, inp, temperature=1.0, top_k=None):
+    def generate(self, inp, temperature=1.0, top_k=10):
         inp = inp.reshape(1, -1)
-        for pos in range(self.config.block_size - inp.shape[1]):
-            logits, _ = self.forward(inp, pos)
+        start_pos = 0
+        for _ in range(self.config.block_size - inp.shape[1]):
+            # print(start_pos)
+            logits, _ = self.forward(inp[:, start_pos:], start_pos)
             logits = logits[:, -1, :] / temperature
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
@@ -151,6 +153,7 @@ class LLama(nn.Module):
             probs = F.softmax(logits, dim=-1)
             inp_next = torch.multinomial(probs, num_samples=1)
             inp = torch.cat((inp, inp_next), dim=1)
+            start_pos = inp.shape[0]
 
         return inp[0]
     
