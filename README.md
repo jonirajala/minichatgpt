@@ -1,4 +1,5 @@
 # minichatgpt
+Writing a chatgpt like service from scratch including the model, api and UI
 
 ## CAM Model
 Current model architeture is pretty similar to Llama
