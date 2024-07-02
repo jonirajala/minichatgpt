@@ -87,7 +87,7 @@ class MultiHeadSelfAttention(nn.Module):
             context = torch.nn.functional.scaled_dot_product_attention(queries, keys, values, attn_mask=None, dropout_p=0 if self.training else 0, is_causal=True)
         else:
             # manual implementation of attention
-            att = (queries @ keys.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
+            att = (queries @ keys.transpose(-2, -1)) * (1.0 / math.sqrt(keys.size(-1)))
             att = att.masked_fill(self.bias[:,:,:seq_len,:seq_len] == 0, float('-inf'))
             att = F.softmax(att, dim=-1)
             context = att @ values # (B, nh, T, T) x (B, nh, T, hs) -> (B, nh, T, hs)

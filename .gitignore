@@ -4,3 +4,12 @@ data/
 venv/
 *.txt
 *.bin
+*.pt
+*.json
+node_modules
+dist
+dist-ssr
+*.local
+
+*.egg-info/
+build/

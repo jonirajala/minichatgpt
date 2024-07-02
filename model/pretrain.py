@@ -4,7 +4,9 @@ import tiktoken
 import os
 from torch import optim
 from tqdm.auto import tqdm
-from model import LLama
+
+from model.model import LLama
+
 import math
 import inspect
 import json
