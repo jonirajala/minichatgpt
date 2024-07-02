@@ -140,7 +140,7 @@ class LLama(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, inp, temperature=1.0, top_k=10):
+    def generate(self, inp, temperature=1.0, top_k=10, yield_ans=False):
         inp = inp.reshape(1, -1)
         start_pos = 0
         for _ in range(self.config.block_size - inp.shape[1]):
@@ -155,5 +155,9 @@ class LLama(nn.Module):
             inp = torch.cat((inp, inp_next), dim=1)
             start_pos = inp.shape[0]
 
-        return inp[0]
+            if yield_ans:
+                yield inp_next.item()
+
+        if not yield_ans:
+            return inp[0]
     

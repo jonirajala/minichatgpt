@@ -39,10 +39,28 @@ def get_response():
     
     prompt_tensor = torch.tensor(enc.encode(prompt)).unsqueeze(0).to(device)
     with torch.no_grad():
-        generated_ids = model.generate(prompt_tensor).squeeze(0).detach().cpu().numpy()
+        generated_ids = model.generate(prompt_tensor, yield_ans=False).squeeze(0).detach().cpu().numpy()
     
     gen_text = enc.decode(generated_ids.tolist())
     return jsonify({"response": gen_text}), 200, {'Content-Type': 'application/json; charset=utf-8'}
+
+from flask import Response, stream_with_context
+
+@app.route('/response-stream', methods=['GET'])
+def get_streamed_response():
+    prompt = request.args.get('prompt')
+    if not prompt:
+        return jsonify({"error": "No prompt provided"}), 400
+    
+    prompt_tensor = torch.tensor(enc.encode(prompt)).unsqueeze(0).to(device)
+    
+    def generate_response():
+        yield f"data: {prompt}\n\n"
+        for token_id in model.generate(prompt_tensor, yield_ans=True):
+            token = enc.decode([token_id])
+            yield f"data: {token}\n\n"
+    
+    return Response(stream_with_context(generate_response()), content_type='text/event-stream')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
