@@ -8,11 +8,25 @@ Current model architeture is pretty similar to Llama
 - rmsnorm
 - etc.
 
+
+
 ## API
 
 
 ## UI
+This demo uses:
+
 76M parameter model trained on 4M tokens
+
+| Parameter     | Description                  | Value        |
+|---------------|------------------------------|--------------|
+| `block_size`  | Size of each block           | 128          |
+| `batch_size`  | Size of each batch           | 32           |
+| `emb_dim`     | Embedding dimension          | 512          |
+| `n_layers`    | Number of layers             | 8            |
+| `n_head`      | Number of attention heads    | 8            |
+
+
 ![UI](ui.png)
 
 
