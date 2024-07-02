@@ -1,7 +1,7 @@
 # minichatgpt
 Writing a chatgpt like service from scratch including the model, api and UI
 
-## CAM Model
+## CAM (crazyassmodel) Model
 Current model architeture is pretty similar to Llama
 - rope
 - Swiglu
