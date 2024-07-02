@@ -5,7 +5,7 @@ import os
 from torch import optim
 from tqdm.auto import tqdm
 
-from model.model import LLama
+from model.CAM_model import CAM
 
 import math
 import inspect
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
     model_name = "CAL" # crazyassllm
     config = Config(enc.n_vocab)
-    model = LLama(config).to(device)
+    model = CAM(config).to(device)
     
     if device == 'cuda':
         model = torch.compile(model)

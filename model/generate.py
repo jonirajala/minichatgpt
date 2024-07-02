@@ -1,7 +1,7 @@
 import torch
 import os
 import tiktoken
-from model import LLama
+from model import CAM
 from pretrain import Config
 
 
@@ -16,7 +16,7 @@ def load_models(parameter_count, enc, directory='trained_models'):
             config_dict = weights['config']
             config = Config(enc.n_vocab)
             config.__dict__.update(config_dict)
-            model = LLama(config)
+            model = CAM(config)
             model.load_state_dict(weights['model_state_dict'])
             models[model_name] = model
     

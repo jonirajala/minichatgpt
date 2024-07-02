@@ -112,7 +112,7 @@ class Block(nn.Module):
         return x
 
 
-class LLama(nn.Module):
+class CAM(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.config = config

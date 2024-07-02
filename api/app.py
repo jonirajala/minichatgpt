@@ -4,7 +4,7 @@ import torch
 import os
 import tiktoken
 
-from model.model import LLama
+from model.CAM_model import CAM
 from model.pretrain import Config
 
 app = Flask(__name__)
@@ -26,7 +26,7 @@ weights = torch.load(model_path, map_location=torch.device('cpu'))
 config_dict = weights['config']
 config = Config(enc.n_vocab)
 config.__dict__.update(config_dict)
-model = LLama(config)
+model = CAM(config)
 model.load_state_dict(weights['model_state_dict'])
 model.to(device)
 model.eval()
