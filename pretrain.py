@@ -44,10 +44,13 @@ def save_losses(train_losses, val_losses, config):
         json.dump(losses, f)
     print(f"Losses saved to {f_name}")
 
-def save_model(model, model_name, step):
+def save_model(model, model_name, step, config):
     model_save_path = os.path.join("trained_models", f"{model_name}.pt")
-    torch.save(model.state_dict(), model_save_path)
-    print(f"Model saved to {model_save_path}")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'config': config.__dict__,
+    }, model_save_path)
+    print(f"Model and config saved to {model_save_path}")
 
 class DataLoader:
     def __init__(self, data, batch_size, block_size):
@@ -71,14 +74,14 @@ class DataLoader:
 
 class Config:
     def __init__(self, vocab_size):
-        self.block_size = 96
+        self.block_size = 128
         self.batch_size = 32
-        self.iters = 1000
+        self.iters = max_step
         self.dropout = 0.1
 
-        self.emb_dim = 768
-        self.n_layers = 12
-        self.n_head = 12
+        self.emb_dim = 512
+        self.n_layers = 8
+        self.n_head = 8
         self.flash = True
         self.vocab_size = vocab_size
 
@@ -128,7 +131,7 @@ if __name__ == "__main__":
     train_losses = []
     val_losses = []
     model.train()
-    pbar = tqdm(range(config.iters), desc="Training Progress")
+    pbar = tqdm(range(config.iters), desc="Training Progress", dynamic_ncols=True)
     for step in pbar:
         x, y = trainloader.get_batch()
         model.zero_grad()
@@ -157,15 +160,12 @@ if __name__ == "__main__":
 
         if (step+1) % 500 == 0:
             saving_model_name = model_name + f"_{config.batch_size*config.block_size*step // 1_000_000}M_TOKENS"
-            save_model(model, saving_model_name, step)
+            save_model(model, saving_model_name, step, config)
             save_losses(train_losses, val_losses, config)
             train_losses = []
             val_losses = []
             print(f"Model and losses saved to on step {step}")
     
-
-    saving_model_name = model_name + f"_{config.batch_size*config.block_size*step // 1_000_000}M TOKENS"
-    save_model(model, saving_model_name, step)
     save_losses(train_losses, val_losses, config)
 
     model.eval()

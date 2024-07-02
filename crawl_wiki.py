@@ -7,6 +7,23 @@ import re
 import random
 from collections import deque
 
+visited_file_path = 'data/visited.txt'
+
+def load_visited_urls(file_path):
+    """Load visited URLs from a file."""
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as file:
+            visited = set(file.read().splitlines())
+    else:
+        visited = set()
+    return visited
+
+def save_visited_urls(visited, file_path):
+    """Save visited URLs to a file."""
+    with open(file_path, 'a', encoding='utf-8') as file:
+        for url in visited:
+            file.write(f"{url}\n")
+
 def get_wikipedia_links(url):
     """Retrieve all Wikipedia links from the given URL."""
     try:
@@ -55,17 +72,18 @@ def get_wikipedia_text(url):
         return None
 
 def save_text_to_file(text, filename):
-    with open(filename, 'w', encoding='utf-8') as file:
+    with open(filename, 'a', encoding='utf-8') as file:
         file.write(text)
 
 def crawl_wikipedia(start_urls, depth, output_file):
     """Crawl Wikipedia starting from start_urls up to the specified depth and write text to output_file."""
-    visited = set()
-    queue = deque([(url, 0) for url in start_urls])
+    visited = load_visited_urls(visited_file_path)
+    start_urls = [url for url in start_urls if url not in visited]
+    queue = deque([(url, 0) for url in start_urls if url not in visited])
     all_texts = ""
+    
     try:    
         while queue:
-
             current_url, current_depth = queue.popleft()
             
             if current_depth > depth:
@@ -94,95 +112,36 @@ def crawl_wikipedia(start_urls, depth, output_file):
                 enc = tiktoken.get_encoding("gpt2")
                 ids = enc.encode_ordinary(all_texts)
                 print(f"Currently {len(ids):,} tokens")
+
     except KeyboardInterrupt:
         pass
+
     # Write all collected texts to the output file
     save_text_to_file(all_texts, output_file)
+    save_visited_urls(visited, visited_file_path)  # Save visited URLs at the end
+
 
 if __name__ == "__main__":
     start_urls = [
-        "https://fi.wikipedia.org/wiki/Pariisi",
-        "https://fi.wikipedia.org/wiki/Shanghai",
-        "https://fi.wikipedia.org/wiki/S%C3%A3o_Paulo",
-        "https://fi.wikipedia.org/wiki/Kairo",
-        "https://fi.wikipedia.org/wiki/Moskova",
-        "https://fi.wikipedia.org/wiki/Etel%C3%A4manner",
-        "https://fi.wikipedia.org/wiki/Australia",
-        "https://fi.wikipedia.org/wiki/Afrikka",
-        "https://fi.wikipedia.org/wiki/Aasia",
-        "https://fi.wikipedia.org/wiki/Amerikka",
-        "https://fi.wikipedia.org/wiki/Eurooppa",
-        "https://fi.wikipedia.org/wiki/Helsinki",
-        "https://fi.wikipedia.org/wiki/Suomi",
-        "https://fi.wikipedia.org/wiki/Maantiede",
-        "https://fi.wikipedia.org/wiki/Toinen_maailmansota",
-        "https://fi.wikipedia.org/wiki/Ensimm%C3%A4inen_maailmansota",
-        "https://fi.wikipedia.org/wiki/Suomen_historia",
-        "https://fi.wikipedia.org/wiki/Euroopan_historia",
-        "https://fi.wikipedia.org/wiki/Renessanssi",
-        "https://fi.wikipedia.org/wiki/Antiikin_Kreikka",
-        "https://fi.wikipedia.org/wiki/Rooman_valtakunta",
-        "https://fi.wikipedia.org/wiki/Uskonpuhdistus",
-        "https://fi.wikipedia.org/wiki/Teollinen_vallankumous",
-        "https://fi.wikipedia.org/wiki/Amerikan_historia",
-        "https://fi.wikipedia.org/wiki/Pohjois-Amerikan_intiaanit",
-        "https://fi.wikipedia.org/wiki/Etel%C3%A4-Amerikan_historia",
-        "https://fi.wikipedia.org/wiki/Kolonialismi",
-        "https://fi.wikipedia.org/wiki/Taiteen_historia",
-        "https://fi.wikipedia.org/wiki/Urho_Kekkonen",
-        "https://fi.wikipedia.org/wiki/Elvis_Presley",
-        "https://fi.wikipedia.org/wiki/Vincent_van_Gogh",
-        "https://fi.wikipedia.org/wiki/Napoleon_I",
-        "https://fi.wikipedia.org/wiki/Friedrich_Nietzsche",
-        "https://fi.wikipedia.org/wiki/Isaac_Newton",
-        "https://fi.wikipedia.org/wiki/Fysiikka",
-        "https://fi.wikipedia.org/wiki/Painovoima",
-        "https://fi.wikipedia.org/wiki/S%C3%A4hk%C3%B6magnetismi",
-        "https://fi.wikipedia.org/wiki/Termodynamiikka",
-        "https://fi.wikipedia.org/wiki/Kvanttimekaniikka",
-        "https://fi.wikipedia.org/wiki/Erityinen_suhteellisuusteoria",
-        "https://fi.wikipedia.org/wiki/Newtonin_lait",
-        "https://fi.wikipedia.org/wiki/S%C3%A4hk%C3%B6varaus",
-        "https://fi.wikipedia.org/wiki/Energia",
-        "https://fi.wikipedia.org/wiki/Matematiikka",
-        "https://fi.wikipedia.org/wiki/Logiikka",
-        "https://fi.wikipedia.org/wiki/P%C3%A4%C3%A4ttely",
-        "https://fi.wikipedia.org/wiki/Joukko",
-        "https://fi.wikipedia.org/wiki/Todenn%C3%A4k%C3%B6isyys",
-        "https://fi.wikipedia.org/wiki/Derivaatta",
-        "https://fi.wikipedia.org/wiki/Riemannin_integraali",
-        "https://fi.wikipedia.org/wiki/Tietotekniikka",
-        "https://fi.wikipedia.org/wiki/Tietokone",
-        "https://fi.wikipedia.org/wiki/Ohjelmointi",
-        "https://fi.wikipedia.org/wiki/Tietojenk%C3%A4sittelytiede",
-        "https://fi.wikipedia.org/wiki/Algoritmi",
-        "https://fi.wikipedia.org/wiki/Ohjelmointikieli",
-        "https://fi.wikipedia.org/wiki/Teko%C3%A4ly",
-        "https://fi.wikipedia.org/wiki/Biologia",
-        "https://fi.wikipedia.org/wiki/Maa",
-        "https://fi.wikipedia.org/wiki/Avaruus",
-        "https://fi.wikipedia.org/wiki/Anatomia",
-        "https://fi.wikipedia.org/wiki/Ekologia",
-        "https://fi.wikipedia.org/wiki/Solubiologia",
-        "https://fi.wikipedia.org/wiki/Solu",
-        "https://fi.wikipedia.org/wiki/Hermosto",
-        "https://fi.wikipedia.org/wiki/Kemia",
-        "https://fi.wikipedia.org/wiki/Molekyyli",
-        "https://fi.wikipedia.org/wiki/Atomi",
-        "https://fi.wikipedia.org/wiki/Taloustiede",
-        "https://fi.wikipedia.org/wiki/Raha",
-        "https://fi.wikipedia.org/wiki/Valtio",
-        "https://fi.wikipedia.org/wiki/Filosofia",
-        "https://fi.wikipedia.org/wiki/Estetiikka",
-        "https://fi.wikipedia.org/wiki/taide",
-        "https://fi.wikipedia.org/wiki/Musiikki",
-        "https://fi.wikipedia.org/wiki/Rock",
-        "https://fi.wikipedia.org/wiki/Blues",
+        "https://fi.wikipedia.org/wiki/Komedia",
+        "https://fi.wikipedia.org/wiki/Makaroni",
+        "https://fi.wikipedia.org/wiki/Ruoka",
+        "https://fi.wikipedia.org/wiki/Hunaja",
+        "https://fi.wikipedia.org/wiki/Kasvit",
+        "https://fi.wikipedia.org/wiki/J%C3%A4nisel%C3%A4imet",
+        "https://fi.wikipedia.org/wiki/Radio",
+        "https://fi.wikipedia.org/wiki/Musta",
+        "https://fi.wikipedia.org/wiki/Koira",
+        "https://fi.wikipedia.org/wiki/Nappi",
+        "https://fi.wikipedia.org/wiki/Pluto",
+        "https://fi.wikipedia.org/wiki/Harry_Potter",
+        "https://fi.wikipedia.org/wiki/Sofi_Oksanen",
+        "https://fi.wikipedia.org/wiki/Aleksis_Kivi",
     ]
 
     random.shuffle(start_urls)
     depth = 3  # Adjust depth as needed
-    output_file = 'raw_finnish.txt'
+    output_file = 'data/raw_finnish.txt'
     
     crawl_wikipedia(start_urls, depth, output_file)
 
@@ -194,7 +153,7 @@ if __name__ == "__main__":
     cleaned_corpus = re.sub(r'\[\d+\]', '', corpus)
 
     # Save cleaned corpus
-    input_file_path = os.path.join(os.path.dirname(__file__), 'cleaned_finnish.txt')
+    input_file_path = os.path.join(os.path.dirname(__file__), 'data/cleaned_finnish.txt')
     with open(input_file_path, 'w', encoding='utf-8') as f:
         f.write(cleaned_corpus)
 
@@ -213,5 +172,5 @@ if __name__ == "__main__":
     # Export to binary files
     train_ids = np.array(train_ids, dtype=np.uint16)
     val_ids = np.array(val_ids, dtype=np.uint16)
-    train_ids.tofile(os.path.join(os.path.dirname(__file__), 'finnish_train.bin'))
-    val_ids.tofile(os.path.join(os.path.dirname(__file__), 'finnish_val.bin'))
+    train_ids.tofile(os.path.join(os.path.dirname(__file__), 'data/finnish_train.bin'))
+    val_ids.tofile(os.path.join(os.path.dirname(__file__), 'data/finnish_val.bin'))
