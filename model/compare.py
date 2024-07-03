@@ -33,12 +33,14 @@ if __name__ == "__main__":
     else:
         file_name = "losses/" + file_name + ".json"
 
+    print(f"loading from {file_name}")
     # Load all losses from the single file
     try:
         with open(file_name, "r") as f:
             all_data = json.load(f)
             train_losses = all_data.get("train_losses", {})
             val_losses = all_data.get("val_losses", {})
+
     except FileNotFoundError:
         print(f"File {file_name} not found.")
         exit(0)
