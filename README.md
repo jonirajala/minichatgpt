@@ -25,7 +25,7 @@ This demo uses:
 | `emb_dim`     | Embedding dimension          | 512          |
 | `n_layers`    | Number of layers             | 8            |
 | `n_head`      | Number of attention heads    | 8            |
-
+s
 
 ![UI](ui.png)
 
